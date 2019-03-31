@@ -231,12 +231,26 @@ sassLint.lintFiles = function (files, options, configPath) {
   includes.forEach(function (file, index) {
     // Only lint non duplicate files from our glob results
     if (includes.indexOf(file) === index) {
-      var lint = that.lintText({
-        'text': fs.readFileSync(file),
-        'format': options.syntax ? options.syntax : path.extname(file).replace('.', ''),
-        'filename': file
-      }, options, configPath);
-      results.push(lint);
+      var text = fs.readFileSync(file);
+      var format = options.syntax ? options.syntax : path.extname(file).replace('.', '');
+      // A .vue file can contain multiple <style="scss"> / <style="sass"> blocks
+      if (format === 'vue') {
+        for (var vueBlock of helpers.extractVueBlocks(text.toString())) {
+          results.push(that.lintText({
+            'text': vueBlock.text,
+            'format': vueBlock.format,
+            'filename': file
+          }, options, configPath));
+        }
+      }
+      else {
+        var lint = that.lintText({
+          'text': text,
+          'format': format,
+          'filename': file
+        }, options, configPath);
+        results.push(lint);
+      }
     }
   });
 
